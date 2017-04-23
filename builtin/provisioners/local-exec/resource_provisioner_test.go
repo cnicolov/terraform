@@ -145,3 +145,51 @@ func TestResourceProvider_ApplyCustomInterpreter(t *testing.T) {
 		t.Errorf("wrong output\ngot:  %s\nwant: %s", got, want)
 	}
 }
+
+func TestResourceProvider_ApplyCustomEnv(t *testing.T) {
+	c := testConfig(t, map[string]interface{}{
+		"command": "echo $FOO $BAR $BAZ",
+		"environment": map[string]interface{}{
+			"FOO": "BAR",
+			"BAR": 1,
+			"BAZ": "true",
+		},
+	})
+
+	output := new(terraform.MockUIOutput)
+	p := Provisioner()
+
+	if err := p.Apply(output, nil, c); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	got := strings.TrimSpace(output.OutputMessage)
+	want := "BAR 1 true"
+	if got != want {
+		t.Errorf("wrong output\ngot:  %s\nwant: %s", got, want)
+	}
+}
+
+func TestResourceProvider_ApplyCustomEnv(t *testing.T) {
+	c := testConfig(t, map[string]interface{}{
+		"command": "echo $FOO $BAR $BAZ",
+		"environment": map[string]interface{}{
+			"FOO": "BAR",
+			"BAR": 1,
+			"BAZ": "true",
+		},
+	})
+
+	output := new(terraform.MockUIOutput)
+	p := Provisioner()
+
+	if err := p.Apply(output, nil, c); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	got := strings.TrimSpace(output.OutputMessage)
+	want := "BAR 1 true"
+	if got != want {
+		t.Errorf("wrong output\ngot:  %s\nwant: %s", got, want)
+	}
+}

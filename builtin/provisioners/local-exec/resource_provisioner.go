@@ -28,10 +28,13 @@ func Provisioner() terraform.ResourceProvisioner {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-
 			"interpreter": &schema.Schema{
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+			},
+			"environment": &schema.Schema{
+				Type:     schema.TypeMap,
 				Optional: true,
 			},
 		},
@@ -45,13 +48,21 @@ func applyFn(ctx context.Context) error {
 	o := ctx.Value(schema.ProvOutputKey).(terraform.UIOutput)
 
 	command := data.Get("command").(string)
-
 	if command == "" {
 		return fmt.Errorf("local-exec provisioner command must be a non-empty string")
 	}
 
+	var env []string
+	env = make([]string, len(environment))
+	for k := range environment {
+		entry := fmt.Sprintf("%s=%s", k, environment[k].(string))
+		env = append(env, entry)
+	}
+
 	// Execute the command using a shell
 	interpreter := data.Get("interpreter").([]interface{})
+	// Execute the command with env
+	environment := data.Get("environment").(map[string]interface{})
 
 	var cmdargs []string
 	if len(interpreter) > 0 {
@@ -78,10 +89,15 @@ func applyFn(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize pipe for output: %s", err)
 	}
 
+	var cmdEnv []string
+	cmdEnv = os.Environ()
+	cmdEnv = append(cmdEnv, env...)
+
 	// Setup the command
 	cmd := exec.CommandContext(ctx, cmdargs[0], cmdargs[1:]...)
 	cmd.Stderr = pw
 	cmd.Stdout = pw
+	cmd.Env = cmdEnv
 
 	output, _ := circbuf.NewBuffer(maxBufSize)
 
